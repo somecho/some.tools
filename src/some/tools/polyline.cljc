@@ -9,7 +9,6 @@
     (if (< (count p) 2) l
         (recur (+ l (vec/distance (first p) (second p))) (rest p)))))
 
-
 (defn index-at-length
   "Given `length`, returns the interpolated index on `polyline` that
   corresponds to a point. If `length` is less than 0 or greater than the total
@@ -20,7 +19,7 @@
              j 1
              length length]
         (if (= j (count polyline)) nil
-            (let [cur-length (vec/dist (nth polyline i) (nth polyline j))]
+            (let [cur-length (vec/distance (nth polyline i) (nth polyline j))]
               (if (<= length cur-length)
                 (+ i (/ length cur-length))
                 (recur (inc i) (inc j) (- length cur-length))))))))
@@ -37,22 +36,24 @@
             (when (< i (dec (count polyline)))
               (vec/mix (nth polyline i) (nth polyline (inc i)) p)))))
 
-
 (defn resample-by-length
   "Returns a new polyline where the distance between every point is `length`,
   based on `polyline`."
-  [polyline length]
-  (loop [distance length
-         vertices [(first polyline)]]
-    (let [index (index-at-length polyline distance)]
-      (if (nil? index) vertices
-          (recur (+ distance length)
-                 (conj vertices (point-at-index polyline index)))))))
+  [polyline length & {:keys [closed] :or {closed false}}]
+  (if (true? closed)
+    (conj (resample-by-length polyline length) (first polyline))
+    (loop [distance length
+           vertices [(first polyline)]]
+      (let [index (index-at-length polyline distance)]
+        (if (nil? index) vertices
+            (recur (+ distance length)
+                   (conj vertices (point-at-index polyline index))))))))
 
 (defn resample-by-count
   "Returns a new polyline with `n` evenly-spaced vertices."
-  [polyline n]
-  (resample-by-length polyline (/ (length polyline) (dec n))))
+  [polyline n & {:keys [closed] :or {closed false}}]
+  (let [num-pts (if (true? closed) (dec n) n)]
+    (resample-by-length polyline (/ (length polyline) num-pts) :closed closed)))
 
 (defn render
   "Framework agnostic function to render the polyline. Requires a rendering function.
