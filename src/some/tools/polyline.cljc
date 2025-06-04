@@ -1,43 +1,58 @@
-(ns some.tools.polyline)
+(ns some.tools.polyline
+  (:require [some.tools.vec :as vec]))
 
-(defn gen-circle2
-  "Generates a 2D polyline representing the vertices of a circle.
-  Arguments:
-  - `cx` - x-coordinate of circle center
-  - `cy` - y-coordinate of circle center
-  - `radius` - circle's radius
+(defn length
+  "Returns the total length of a polyline."
+  [polyline]
+  (loop [l 0
+         p polyline]
+    (if (< (count p) 2) l
+        (recur (+ l (vec/distance (first p) (second p))) (rest p)))))
 
-  Keys:
-  - `:res` - number of segments to represent the circle with. (Default: 72)"
-  [cx cy radius & {:keys [res] :or {res 72}}]
-  (loop [i 0
-         vertices []]
-    (if (= i (inc res)) vertices
-        (let [p (* Math/PI 2.0 (/ i res))
-              x (+ cx (* radius (Math/cos p)))
-              y (+ cy (* radius (Math/sin p)))]
-          (recur (inc i) (conj vertices [x y]))))))
 
-(defn gen-star2
-  "Generates a star as a 2D polyline.
-  Arguments:
-  - `cx` - x-coordinate of star center
-  - `cy` - y-coordinate of star center
-  - `inner-radius` - radius of the inner points of the star
-  - `outer-radius` - radius of the outer points of the star
+(defn index-at-length
+  "Given `length`, returns the interpolated index on `polyline` that
+  corresponds to a point. If `length` is less than 0 or greater than the total
+  length of `polyline`, returns `nil`."
+  [polyline length]
+  (if (< length 0.0) nil
+      (loop [i 0
+             j 1
+             length length]
+        (if (= j (count polyline)) nil
+            (let [cur-length (vec/dist (nth polyline i) (nth polyline j))]
+              (if (<= length cur-length)
+                (+ i (/ length cur-length))
+                (recur (inc i) (inc j) (- length cur-length))))))))
 
-  Keys:
-  - `:num-points` - the number of points the star has. (Default: 5)"
-  [cx cy inner-radius outer-radius & {:keys [num-points] :or {num-points 5}}]
-  (let [num-vertices (* 2 num-points)]
-    (loop [i 0
-           vertices []]
-      (if (= i (inc num-vertices)) vertices
-          (let [deg (* Math/PI 2.0 (/ i num-vertices))
-                r (if (even? i) outer-radius inner-radius)
-                x (-> (Math/cos deg) (* r) (+ cx))
-                y (-> (Math/sin deg) (* r) (+ cy))]
-            (recur (inc i) (conj vertices [x y])))))))
+(defn point-at-index
+  "Given an interpolated `index`, returns a point on `polyline`. Returns `nil`
+  if `index` is less than 0.0 or out of bounds."
+  [polyline index]
+  (cond
+    (or (< index 0.0) (> index (dec (count polyline)))) nil
+    (= index 0.0) (first polyline)
+    :else (let [i (Math/ceil (dec index))
+                p (- index i)]
+            (when (< i (dec (count polyline)))
+              (vec/mix (nth polyline i) (nth polyline (inc i)) p)))))
+
+
+(defn resample-by-length
+  "Returns a new polyline where the distance between every point is `length`,
+  based on `polyline`."
+  [polyline length]
+  (loop [distance length
+         vertices [(first polyline)]]
+    (let [index (index-at-length polyline distance)]
+      (if (nil? index) vertices
+          (recur (+ distance length)
+                 (conj vertices (point-at-index polyline index)))))))
+
+(defn resample-by-count
+  "Returns a new polyline with `n` evenly-spaced vertices."
+  [polyline n]
+  (resample-by-length polyline (/ (length polyline) (dec n))))
 
 (defn render
   "Framework agnostic function to render the polyline. Requires a rendering function.
