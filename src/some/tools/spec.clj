@@ -12,6 +12,14 @@
                                        :min-count 2
                                        :max-count 3))
 
+(s/def ::polyline
+  (s/or :2d (s/coll-of (s/coll-of double? :kind vector? :count 2)
+                       :kind vector?
+                       :min-count 2)
+        :3d (s/coll-of (s/coll-of double? :kind vector? :count 3)
+                       :kind vector?
+                       :min-count 2)))
+
 ;;; some.tools.scalar
 
 (s/fdef some.tools.scalar/mix
@@ -73,10 +81,27 @@
                #(= (count (:v1 %)) (count (:v2 %))))
   :ret ::point)
 
+(s/def :dx->x/start double?)
+
 (s/fdef some.tools.vec/dx->x
   :args (s/cat :dx (s/coll-of number? :kind vector? :min-count 1)
-               :kwargs (s/keys :opt [::start]))
+               :kwargs (s/keys :opt [:dx->x/start]))
   :ret (s/coll-of number? :kind vector? :min-count 2)
   :fn #(and (= (-> % :args :dx count inc) (-> % :ret count))
             (or (-> % :ret first zero?)
                 (= (-> % :ret first) (-> % :args :kwargs :start)))))
+
+;;; some.tools.polyline
+
+(s/fdef some.tools.polyline/length
+  :args (s/cat :polyline ::polyline)
+  :ret double?)
+
+(s/fdef some.tools.polyline/index-at-length
+  :args (s/cat :polyline ::polyline :length double?)
+  :ret (s/or :within-bounds double? :out-of-bounds nil?)
+  :fn #(let [l (-> % :args :length)
+             [path i] (:ret %)]
+         (cond (< l 0.0) (nil? i)
+               (zero? l) (zero? i)
+               :else (or (double? i) (nil? i)))))

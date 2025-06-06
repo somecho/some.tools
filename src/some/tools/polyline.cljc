@@ -1,8 +1,7 @@
 (ns some.tools.polyline
   "A polyline is simply a vec of vecs containing either 2 or 3 elements, synonymous
   with a vec2 or vec3 type."
-  (:require [some.tools.vec :as vec]
-            [clojure.spec.alpha :as s]))
+  (:require [some.tools.vec :as vec]))
 
 (defn length
   "Returns the total length of a polyline."
@@ -17,15 +16,16 @@
   corresponds to a point. If `length` is less than 0 or greater than the total
   length of `polyline`, returns `nil`."
   [polyline length]
-  (if (< length 0.0) nil
-      (loop [i 0
-             j 1
-             length length]
-        (if (= j (count polyline)) nil
-            (let [cur-length (vec/distance (nth polyline i) (nth polyline j))]
-              (if (<= length cur-length)
-                (+ i (/ length cur-length))
-                (recur (inc i) (inc j) (- length cur-length))))))))
+  (cond (< length 0.0) nil
+        (zero? length) 0.0
+        :else (loop [i 0
+                     j 1
+                     length length]
+                (if (= j (count polyline)) nil
+                    (let [cur-length (vec/distance (nth polyline i) (nth polyline j))]
+                      (if (<= length cur-length)
+                        (+ i (/ length cur-length))
+                        (recur (inc i) (inc j) (- length cur-length))))))))
 
 (defn point-at-index
   "Given an interpolated `index`, returns a point on `polyline`. Returns `nil`
