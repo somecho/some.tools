@@ -1,5 +1,8 @@
 (ns some.tools.polyline
-  (:require [some.tools.vec :as vec]))
+  "A polyline is simply a vec of vecs containing either 2 or 3 elements, synonymous
+  with a vec2 or vec3 type."
+  (:require [some.tools.vec :as vec]
+            [clojure.spec.alpha :as s]))
 
 (defn length
   "Returns the total length of a polyline."
@@ -29,7 +32,7 @@
   if `index` is less than 0.0 or out of bounds."
   [polyline index]
   (cond
-    (or (< index 0.0) (> index (dec (count polyline)))) nil
+    (or (<= (double index) 0.0) (> index (dec (count polyline)))) nil
     (= index 0.0) (first polyline)
     :else (let [i (Math/ceil (dec index))
                 p (- index i)]

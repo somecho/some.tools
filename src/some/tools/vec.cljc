@@ -1,8 +1,7 @@
 (ns some.tools.vec
   "This toolkit uses vectors like Clojure vectors and also mathematical
   constructs of any dimension e.g. 2D or 3D coordinates."
-  (:require [some.tools.scalar :as scalar]
-            [some.tools.vec :as vec]))
+  (:require [some.tools.scalar :as scalar]))
 
 (defn +
   "Returns the component-wise sum of `v1` and `v2`."
@@ -40,6 +39,6 @@
   For example:
   [1 1 1] -> [0 1 2 3]
   [1 2 3] -> [0 1 3 6]"
-  [dx & {:keys [start] :or {start 0}}]
+  [dx & {:keys [start] :or {start 0.0}}]
   (reduce (fn [res next]
-            (conj res (+ (last res) next))) [start] dx))
+            (conj res (clojure.core/+ (last res) next))) [start] dx))
