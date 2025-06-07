@@ -6,10 +6,9 @@
 (defn length
   "Returns the total length of a polyline."
   [polyline]
-  (loop [l 0
-         p polyline]
-    (if (< (count p) 2) l
-        (recur (+ l (vec/distance (first p) (second p))) (rest p)))))
+  (:length (reduce (fn [{l :length p :prev-pt, :as state} next]
+                     (assoc state :prev-pt next :length (+ l (vec/distance p next))))
+                   {:prev-pt (first polyline) :length 0.0} (rest polyline))))
 
 (defn index-at-length
   "Given `length`, returns the interpolated index on `polyline` that
